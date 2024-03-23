@@ -69,7 +69,8 @@ async def offer(request):
     print("returning")
 
     # Add CORS headers
-    response.headers['Access-Control-Allow-Origin'] = 'http://127.0.0.1:4200'  # Replace '*' with your specific allowed origins if necessary
+    # response.headers['Access-Control-Allow-Origin'] = 'http://127.0.0.1:4200'  # Replace '*' with your specific allowed origins if necessary
+    response.headers['Access-Control-Allow-Origin'] = '*'  # Replace '*' with your specific allowed origins if necessary
     response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS, GET'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
 
