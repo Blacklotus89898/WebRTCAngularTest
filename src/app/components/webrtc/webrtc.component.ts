@@ -47,7 +47,7 @@ export class WebRTCComponent {
       //   headers.append("Access-Control-Allow-Credentials","true ");
       //   headers.append("Access-Control-Allow-Methods", "OPTIONS, GET, POST");
       //  headers.append("Access-Control-Allow-Headers","Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control");
-        const response = await fetch('http://localhost:8080/offer', { //fix this
+        const response = await fetch('http://192.168.0.116:8080/offer', { //fix this
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
