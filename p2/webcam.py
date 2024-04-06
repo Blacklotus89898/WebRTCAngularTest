@@ -26,7 +26,7 @@ HOST_IP = os.getenv('HOST_IP', "0.0.0.0")
 #     return web.Response(content_type="application/javascript", text=content)
 
 async def offer(request):
-    print(request)  
+    print(request.rel_url.query["id"])  
     params = await request.json()
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
 

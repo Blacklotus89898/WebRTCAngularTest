@@ -5,7 +5,7 @@ import { WebRTCComponent } from './components/webrtc/webrtc.component';
 
 export const routes: Routes = [
 
-    { path: 'pc', component: PeerConnectionComponent },
+    // { path: 'pc', component: PeerConnectionComponent },
         { path: 'about', component: AboutComponent },
         { path: 'rtc', component: WebRTCComponent },
 ];
