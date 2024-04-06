@@ -1,73 +1,72 @@
-// import { Component } from '@angular/core';
+import { Component } from '@angular/core';
+import { ViewChild, ElementRef } from '@angular/core';
 
-// @Component({
-//   selector: 'app-peer-connection',
-//   standalone: true,
-//   imports: [],
-//   templateUrl: './peer-connection.component.html',
-//   styleUrl: './peer-connection.component.css'
-// })
-// export class PeerConnectionComponent {
-
-// }
-
-import { HttpClient } from '@angular/common/http';
-import { Component, Injectable, OnInit } from '@angular/core';
-// import { HttpClient } from '@angular/common/http';
-
-@Injectable({
-  providedIn: 'root'
-})
 @Component({
-  selector: 'app-peer-connection',
-  templateUrl: './peer-connection.component.html',
-  styleUrls: ['./peer-connection.component.css']
+  selector: 'app-webrtc',
+  templateUrl: './webrtc.component.html',
+  styleUrls: ['./webrtc.component.scss']
 })
-
-export class PeerConnectionComponent implements OnInit {
-
+export class WebrtcComponent {
   pc: RTCPeerConnection | null = null;
+  host_ip: string = "127.0.0.1";
+  device_id: number = 0;
+  error: unknown;
 
-  constructor(private http: HttpClient) { }
+  @ViewChild('videoElement') videoElement: ElementRef;
 
-  ngOnInit(): void {
-    this.start();
-  }
+  constructor() { }
+
   async negotiate() {
-    this.pc?.addTransceiver('video', { direction: 'recvonly' });
-    this.pc?.addTransceiver('audio', { direction: 'recvonly' });
+    try {
+      this.pc?.addTransceiver('video', { direction: 'recvonly' });
 
-    const offer = await this.pc?.createOffer();
-    await this.pc?.setLocalDescription(offer);
+      const offer = await this.pc?.createOffer();
+      await this.pc?.setLocalDescription(offer);
 
-    // Wait for ICE gathering to complete
-    await new Promise<void>((resolve) => {
-      if (this.pc?.iceGatheringState === 'complete') {
-        resolve();
-      } else {
-        const checkState = () => {
-          if (this.pc?.iceGatheringState === 'complete') {
-            this.pc?.removeEventListener('icegatheringstatechange', checkState);
-            resolve();
-          }
-        };
-        this.pc?.addEventListener('icegatheringstatechange', checkState);
-      }
-    });
+      // Wait for ICE gathering to complete
+      await new Promise<void>((resolve) => {
+        if (this.pc?.iceGatheringState === 'complete') {
+          resolve();
+        } else {
+          const checkState = () => {
+            if (this.pc?.iceGatheringState === 'complete') {
+              this.pc?.removeEventListener('icegatheringstatechange', checkState);
+              resolve();
+            }
+          };
+          this.pc?.addEventListener('icegatheringstatechange', checkState);
+        }
+      });
 
-    const response = await fetch('/offer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sdp: this.pc?.localDescription?.sdp, type: this.pc?.localDescription?.type })
-    });
-    const answer = await response.json();
-    await this.pc?.setRemoteDescription(answer);
+
+      // console.log("before fetch");
+      let pd = await JSON.stringify({ sdp: this.pc?.localDescription?.sdp, type: this.pc?.localDescription?.type });
+      console.log(pd);
+      const headers = new Headers();
+      headers.append('Content-Type', 'application/json');
+      headers.append('Access-Control-Allow-Origin', '*');
+      const response = await fetch(`http://${this.host_ip}:8080/offer?id=${this.device_id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ sdp: this.pc?.localDescription?.sdp, type: this.pc?.localDescription?.type })
+      });
+      console.log("after fetch and response is: ", response);
+      const answer = await response.json();
+      console.log("after response and answer is: ", answer);
+      await this.pc?.setRemoteDescription(answer);
+    } catch (error) {
+      console.error('Error in negotiate:', error); 
+      this.error = error;
+      // Handle error as needed
+    }
   }
 
 
 
   async start() {
-    // const config = { sdpSemantics: 'unified-plan' };
     const config = { sdpSemantics: 'unified-plan', iceServers: [] as RTCIceServer[] }; // Define iceServers as an empty array initially
     if ((document.getElementById('use-stun') as HTMLInputElement).checked) {
       config.iceServers = [{ urls: ['stun:stun.l.google.com:19302'] }];
@@ -76,23 +75,24 @@ export class PeerConnectionComponent implements OnInit {
 
     this.pc.addEventListener('track', (evt) => {
       if (evt.track.kind === 'video') {
-        (document.getElementById('video') as HTMLVideoElement).srcObject = evt.streams[0];
-      } else {
-        (document.getElementById('audio') as HTMLAudioElement).srcObject = evt.streams[0];
+        if (this.videoElement.nativeElement) {
+          this.videoElement.nativeElement.srcObject = evt.streams[0];
+        } else {
+          console.error("Video element not found");
+          this.error = "Video element not found";
+        }
       }
     });
 
-    document.getElementById('start')!.style.display = 'none';
     await this.negotiate();
-    document.getElementById('stop')!.style.display = 'inline-block';
   }
 
-  stop(): void {
-    document.getElementById('stop')!.style.display = 'none';
-
+  stop() {
     setTimeout(() => {
       this.pc?.close();
+      // console.log(this.pc);
+      this.pc = null; //set to null after closing
     }, 500);
-  }
 
+  }
 }
